@@ -9,7 +9,7 @@ HyperTransfer copies a file only while a RDMA port is ACTIVE, then compares thre
 
 A one-sided WRITE is not finished when the sender's completion arrives. Publish a 64-byte completion record after a flush read of the tail. The receiver writes the partial file only after that record is visible and the CPU-visible bytes match it. Rename the partial onto the finished name only when the three digests agree.
 
-Thunderbolt Internet Protocol is a link. It is not a reason to open the file panes or to send the file. This app does not listen on a port. File bytes stay off sockets.
+Thunderbolt Internet Protocol is a link. It is not a reason to open the file panes or to send the file. File bytes stay off sockets. UDP 24764 on the Thunderbolt bridge carries the 64-byte queue-pair record and then closes.
 
 ```bash
 swift run --disable-sandbox HyperTransferChecks

@@ -146,13 +146,93 @@ final class FabricTests {
         }
     }
 
-    func testThisMacProbeIsNotRDMA() {
+    func testAppleThunderboltActiveIsRDMA() {
+        let ports = parseIbvDevinfo(appleDevinfo)
+        let active = ports.first { $0.name == "rdma_en3/1" }
+        XCTAssertEqual(active?.transport, "thunderbolt")
+        XCTAssertEqual(active?.word, "Up")
+        XCTAssertEqual(active?.state, "active")
+        XCTAssertEqual(active?.rdma, true)
+        XCTAssertTrue(active?.detail.contains("ACTIVE") == true)
+    }
+
+    func testAppleThunderboltDownIsNotRDMA() {
+        let ports = parseIbvDevinfo(appleDevinfo)
+        let down = ports.first { $0.name == "rdma_en2/1" }
+        XCTAssertEqual(down?.word, "Down")
+        XCTAssertEqual(down?.rdma, false)
+        XCTAssertEqual(down?.state, "down")
+    }
+
+    func testActiveDeferIsNotActive() {
+        let ports = parseIbvDevinfo("hca_id: rdma_en9\ntransport: Thunderbolt (100)\nport: 1\nstate: PORT_ACTIVE_DEFER (5)\nlink_layer: Thunderbolt\n")
+        XCTAssertEqual(ports.count, 1)
+        XCTAssertFalse(ports[0].rdma)
+        XCTAssertEqual(ports[0].word, "Down")
+        XCTAssertEqual(verbsStateCode("PORT_ACTIVE_DEFER (5)"), 5)
+    }
+
+    func testParentheticalStateFortyIsNotActive() {
+        let ports = parseIbvDevinfo("hca_id: rdma_en9\ntransport: Thunderbolt (100)\nport: 1\nstate: PORT_ACTIVE (40)\nlink_layer: Thunderbolt\n")
+        XCTAssertEqual(ports.count, 1)
+        XCTAssertFalse(ports[0].rdma)
+        XCTAssertEqual(ports[0].word, "Down")
+        XCTAssertNil(verbsStateCode("PORT_ACTIVE (40)").flatMap { $0 == 4 ? 4 : nil })
+        XCTAssertEqual(verbsStateCode("PORT_ACTIVE (4)"), 4)
+        XCTAssertEqual(verbsStateCode("4: ACTIVE"), 4)
+        XCTAssertEqual(verbsStateCode("40: ACTIVE"), 40)
+    }
+
+    func testThunderboltIPStaysClosedBesideActiveVerbs() {
+        var ports = parseThunderbolt(connectedThunderbolt) + parseIbvDevinfo(appleDevinfo)
+        ports.append(verbsPort(library: "librdma"))
+        let report = buildReport(ports: ports, verbsLibrary: "librdma", disk: sampleDisk())
+        XCTAssertTrue(report.rdmaActive)
+        XCTAssertEqual(report.rdmaWord, "Up")
+        let ip = report.ports.first { $0.transport == "thunderbolt-ip" }
+        XCTAssertEqual(ip?.rdma, false)
+        XCTAssertEqual(ip?.word, "Unreachable")
+        let unknown = report.ports.first { $0.transport == "thunderbolt-unknown" }
+        XCTAssertEqual(unknown?.rdma, false)
+        let library = report.ports.first { $0.name == "librdma" }
+        XCTAssertEqual(library?.word, "Place")
+        XCTAssertEqual(library?.rdma, false)
+    }
+
+    func testThisMacProbeSeesActiveThunderboltVerbs() {
         let report = probeMachine()
-        XCTAssertFalse(report.rdmaActive)
-        XCTAssertTrue(report.rdmaWord == "Unreachable" || report.rdmaWord == "Down")
+        XCTAssertTrue(report.rdmaActive)
+        XCTAssertEqual(report.rdmaWord, "Up")
+        XCTAssertNotNil(report.ports.first { $0.rdma && $0.state == "active" && $0.transport == "thunderbolt" })
         for port in report.ports where port.transport == "thunderbolt-ip" {
             XCTAssertFalse(port.rdma)
             XCTAssertEqual(port.word, "Unreachable")
         }
+        for port in report.ports where port.transport == "thunderbolt-unknown" {
+            XCTAssertFalse(port.rdma)
+        }
+        let library = report.ports.first { $0.name == "librdma" }
+        XCTAssertEqual(library?.word, "Place")
+        XCTAssertEqual(library?.rdma, false)
+    }
+
+    func testVerbsDeviceOpensOnThisMac() {
+        let report = probeMachine()
+        let device = activeVerbsDevice(report)
+        XCTAssertNotNil(device)
+        XCTAssertTrue(verbsQueuePairOpens(device: device ?? ""))
     }
 }
+
+private let appleDevinfo = """
+hca_id:	rdma_en2
+	transport:			Thunderbolt (100)
+		port:	1
+			state:			PORT_DOWN (1)
+			link_layer:		Thunderbolt
+hca_id:	rdma_en3
+	transport:			Thunderbolt (100)
+		port:	1
+			state:			PORT_ACTIVE (4)
+			link_layer:		Thunderbolt
+"""

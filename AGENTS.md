@@ -7,6 +7,6 @@ swift run --disable-sandbox HyperTransferChecks
 /bin/sh scripts/run.sh
 ```
 
-The app does not listen. A Thunderbolt IP service is not a reason to open the panes.
+A Thunderbolt IP service is not a reason to open the panes. File bytes stay off sockets. UDP 24764 on the Thunderbolt bridge carries the 64-byte queue-pair record and then closes.
 
 The always-on rule is `.cursor/rules/hypertransfer.mdc`. Regressions go in `docs/invariants.md` through the `capture-invariant` skill.

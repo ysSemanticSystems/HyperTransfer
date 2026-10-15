@@ -36,7 +36,74 @@ struct HyperTransferChecks {
         attempt("FabricTests.testThunderboltSysfsActiveIsRDMA") { FabricTests().testThunderboltSysfsActiveIsRDMA() }
         attempt("FabricTests.testActiveRoCEStaysUpBesideThunderboltIP") { FabricTests().testActiveRoCEStaysUpBesideThunderboltIP() }
         attempt("FabricTests.testSysfsReadsAnActiveRoCEPort") { try FabricTests().testSysfsReadsAnActiveRoCEPort() }
-        attempt("FabricTests.testThisMacProbeIsNotRDMA") { FabricTests().testThisMacProbeIsNotRDMA() }
+        attempt("FabricTests.testAppleThunderboltActiveIsRDMA") { FabricTests().testAppleThunderboltActiveIsRDMA() }
+        attempt("FabricTests.testAppleThunderboltDownIsNotRDMA") { FabricTests().testAppleThunderboltDownIsNotRDMA() }
+        attempt("FabricTests.testActiveDeferIsNotActive") { FabricTests().testActiveDeferIsNotActive() }
+        attempt("FabricTests.testParentheticalStateFortyIsNotActive") { FabricTests().testParentheticalStateFortyIsNotActive() }
+        attempt("FabricTests.testThunderboltIPStaysClosedBesideActiveVerbs") { FabricTests().testThunderboltIPStaysClosedBesideActiveVerbs() }
+        attempt("FabricTests.testThisMacProbeSeesActiveThunderboltVerbs") { FabricTests().testThisMacProbeSeesActiveThunderboltVerbs() }
+        attempt("FabricTests.testVerbsDeviceOpensOnThisMac") { FabricTests().testVerbsDeviceOpensOnThisMac() }
+        attempt("LinkTests.testVpnOnTheDefaultRouteIsNamedWhenNoPeerAnswers") { LinkTests().testVpnOnTheDefaultRouteIsNamedWhenNoPeerAnswers() }
+        attempt("LinkTests.testVpnWithoutTheDefaultRouteIsNamedWhenNoPeerAnswers") { LinkTests().testVpnWithoutTheDefaultRouteIsNamedWhenNoPeerAnswers() }
+        attempt("LinkTests.testVpnIsNamedWhenTheBridgeStillAnswers") { LinkTests().testVpnIsNamedWhenTheBridgeStillAnswers() }
+        attempt("LinkTests.testNoPeerWithoutAVpnSaysTheNoteIsStillBeingSent") { LinkTests().testNoPeerWithoutAVpnSaysTheNoteIsStillBeingSent() }
+        attempt("LinkTests.testPeerAnswerWithoutAVpnIsUp") { LinkTests().testPeerAnswerWithoutAVpnIsUp() }
+        attempt("LinkTests.testMissingThunderboltBridgeServiceIsDown") { LinkTests().testMissingThunderboltBridgeServiceIsDown() }
+        attempt("LinkTests.testDisabledThunderboltBridgeServiceIsDown") { LinkTests().testDisabledThunderboltBridgeServiceIsDown() }
+        attempt("LinkTests.testBridgeInterfaceDownIsDown") { LinkTests().testBridgeInterfaceDownIsDown() }
+        attempt("LinkTests.testMissingLinkLocalIsDown") { LinkTests().testMissingLinkLocalIsDown() }
+        attempt("LinkTests.testLinkLocalIPv4OnTheBridgeIsNotAPath") { LinkTests().testLinkLocalIPv4OnTheBridgeIsNotAPath() }
+        attempt("LinkTests.testOwnPingReplyIsNotAnotherMac") { LinkTests().testOwnPingReplyIsNotAnotherMac() }
+        attempt("LinkTests.testUtunWithOnlyLinkLocalIsNotAVpn") { LinkTests().testUtunWithOnlyLinkLocalIsNotAVpn() }
+        attempt("LinkTests.testEnabledVpnServiceWithoutATunnelIsNotUp") { LinkTests().testEnabledVpnServiceWithoutATunnelIsNotUp() }
+        attempt("LinkTests.testDisabledVpnServiceWithALiveTunnelNamesTheInterface") { LinkTests().testDisabledVpnServiceWithALiveTunnelNamesTheInterface() }
+        attempt("LinkTests.testTailscaleAndProtonAreBothNamed") { LinkTests().testTailscaleAndProtonAreBothNamed() }
+        attempt("LinkTests.testDefaultRouteAloneNamesTheTunnel") { LinkTests().testDefaultRouteAloneNamesTheTunnel() }
+        attempt("LinkTests.testProbeFailureDoesNotInventAPeer") { LinkTests().testProbeFailureDoesNotInventAPeer() }
+        attempt("LinkTests.testReplyProbeFailureDoesNotClaimSilence") { LinkTests().testReplyProbeFailureDoesNotClaimSilence() }
+        attempt("LinkTests.testWaitingPhaseShowsTheVpnSentence") { LinkTests().testWaitingPhaseShowsTheVpnSentence() }
+        attempt("LinkTests.testBindFailureStaysOnScreen") { LinkTests().testBindFailureStaysOnScreen() }
+        attempt("LinkTests.testQueuePairUpKeepsItsPhase") { LinkTests().testQueuePairUpKeepsItsPhase() }
+        attempt("LinkTests.testParsersReadServicesInterfacesRouteAndPing") { LinkTests().testParsersReadServicesInterfacesRouteAndPing() }
+        attempt("LinkTests.testThisMacBridgeProbeReturnsAWord") { LinkTests().testThisMacBridgeProbeReturnsAWord() }
+        attempt("LinkTests.testASecondProcessCannotOpenThePort") { LinkTests().testASecondProcessCannotOpenThePort() }
+        attempt("LinkTests.testTheWindowClaimsTheProcessBeforeItProbes") { try LinkTests().testTheWindowClaimsTheProcessBeforeItProbes() }
+        attempt("LinkTests.testIPv4MappedGIDIsTheRoute") { try LinkTests().testIPv4MappedGIDIsTheRoute() }
+        attempt("LinkTests.testReadyTransitionIsRetriedOnTheSamePair") { try LinkTests().testReadyTransitionIsRetriedOnTheSamePair() }
+        attempt("LinkTests.testFirewallBlockIsTriedAgainEverySecond") { try LinkTests().testFirewallBlockIsTriedAgainEverySecond() }
+        attempt("LinkTests.testOlderWindowSentenceKeepsTheCopyClosed") { LinkTests().testOlderWindowSentenceKeepsTheCopyClosed() }
+        attempt("LandingTests.testCopyStaysClosedUntilThePeerFolderIsListed") { LandingTests().testCopyStaysClosedUntilThePeerFolderIsListed() }
+        attempt("LandingTests.testExistingFileStaysUntilReplace") { LandingTests().testExistingFileStaysUntilReplace() }
+        attempt("LandingTests.testHiddenExistingFileIsStillNamed") { LandingTests().testHiddenExistingFileIsStillNamed() }
+        attempt("LandingTests.testCaseDifferenceNamesThePeerFile") { LandingTests().testCaseDifferenceNamesThePeerFile() }
+        attempt("LandingTests.testFolderAlreadyThereMustBeOpened") { LandingTests().testFolderAlreadyThereMustBeOpened() }
+        attempt("LandingTests.testFileDoesNotLandOnAPeerFolder") { LandingTests().testFileDoesNotLandOnAPeerFolder() }
+        attempt("LandingTests.testFolderDoesNotLandOnAPeerFile") { LandingTests().testFolderDoesNotLandOnAPeerFile() }
+        attempt("LandingTests.testTruncatedListBlocksANameThatIsNotShown") { LandingTests().testTruncatedListBlocksANameThatIsNotShown() }
+        attempt("LandingTests.testTruncatedListAllowsANameThatIsShown") { LandingTests().testTruncatedListAllowsANameThatIsShown() }
+        attempt("LandingTests.testNewNameInAFullListCanLand") { LandingTests().testNewNameInAFullListCanLand() }
+        attempt("LandingTests.testLinkNameStaysClosed") { LandingTests().testLinkNameStaysClosed() }
+        attempt("LandingTests.testSlashInTheCopyNameStaysClosed") { LandingTests().testSlashInTheCopyNameStaysClosed() }
+        attempt("PeerTests.testPeerCopyMatchesAcrossTwoChunks") { try PeerTests().testPeerCopyMatchesAcrossTwoChunks() }
+        attempt("PeerTests.testPeerCopyMatchesAnEmptyFile") { try PeerTests().testPeerCopyMatchesAnEmptyFile() }
+        attempt("PeerTests.testPeerCopyDoesNotRenameWithoutTheRecord") { try PeerTests().testPeerCopyDoesNotRenameWithoutTheRecord() }
+        attempt("PeerTests.testPeerCopyRefusesAPathThatLeavesTheRoot") { try PeerTests().testPeerCopyRefusesAPathThatLeavesTheRoot() }
+        attempt("PeerTests.testPeerCopyDoesNotRenameWhenTheSourceChanges") { try PeerTests().testPeerCopyDoesNotRenameWhenTheSourceChanges() }
+        attempt("PeerTests.testPeerCopyLeavesAnExistingFile") { try PeerTests().testPeerCopyLeavesAnExistingFile() }
+        attempt("PeerTests.testPeerCopyReplacesOnlyAfterTheThreeReadsAgree") { try PeerTests().testPeerCopyReplacesOnlyAfterTheThreeReadsAgree() }
+        attempt("PeerTests.testPeerCopyRejectsAnAbsolutePath") { try PeerTests().testPeerCopyRejectsAnAbsolutePath() }
+        attempt("PeerTests.testPeerCopyRejectsAShortHeader") { try PeerTests().testPeerCopyRejectsAShortHeader() }
+        attempt("PeerTests.testPeerCopyDoesNotRenameACorruptRecord") { try PeerTests().testPeerCopyDoesNotRenameACorruptRecord() }
+        attempt("PeerTests.testPeerCopyDoesNotPostAnEmptyRecordAfterAnExactChunk") { try PeerTests().testPeerCopyDoesNotPostAnEmptyRecordAfterAnExactChunk() }
+        attempt("PeerTests.testThunderboltFramesRoundTo4096") { PeerTests().testThunderboltFramesRoundTo4096() }
+        attempt("PeerTests.testSetupRecordRejectsAnythingBut64Bytes") { PeerTests().testSetupRecordRejectsAnythingBut64Bytes() }
+        attempt("PeerTests.testPeerListShowsTheFolderThatWillReceiveTheCopy") { try PeerTests().testPeerListShowsTheFolderThatWillReceiveTheCopy() }
+        attempt("PeerTests.testPeerListKeepsAHiddenName") { try PeerTests().testPeerListKeepsAHiddenName() }
+        attempt("PeerTests.testPeerListRefusesAPathThatLeavesTheRoot") { try PeerTests().testPeerListRefusesAPathThatLeavesTheRoot() }
+        attempt("PeerTests.testPeerListRefusesASymlink") { try PeerTests().testPeerListRefusesASymlink() }
+        attempt("PeerTests.testPeerListStopsEarlyWhenThePageIsFull") { PeerTests().testPeerListStopsEarlyWhenThePageIsFull() }
+        attempt("PeerTests.testFileHeaderIsNotAPeerList") { PeerTests().testFileHeaderIsNotAPeerList() }
+        attempt("SourceContractTests.testQueuePairRecordStays64Bytes") { try SourceContractTests().testQueuePairRecordStays64Bytes() }
         attempt("TransferTests.testRecordIs64BytesAndSeparateFromPayload") { TransferTests().testRecordIs64BytesAndSeparateFromPayload() }
         attempt("TransferTests.testShortRecordIsNotANotification") { TransferTests().testShortRecordIsNotANotification() }
         attempt("TransferTests.testWrongVersionIsNotANotification") { TransferTests().testWrongVersionIsNotANotification() }

@@ -22,6 +22,7 @@ The live probe is `probeMachine()` in `Sources/HyperTransferCore/Fabric.swift`. 
 
 - `rdmaActive` is the gate. False means browse and copy stay closed.
 - A Thunderbolt row with word Up is the cable. The IP row beside it is Unreachable. Protocol 1 is Internet Protocol. An unrecognized protocol, including 64087, stays unused.
+- `ibv_devinfo` state `PORT_ACTIVE (4)` with link layer Thunderbolt is RDMA. `PORT_DOWN` is Down. The number in parentheses has to be 4.
 - InfiniBand, RoCE, iWARP, and EFA count only when the number before the colon is 4.
 - A missing driver name on Ethernet is `ethernet-rdma`, not RoCE and not iWARP.
 - EFA is not relabeled RoCE.

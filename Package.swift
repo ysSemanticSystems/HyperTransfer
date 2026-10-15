@@ -8,10 +8,23 @@ let package = Package(
         .executable(name: "HyperTransfer", targets: ["HyperTransfer"])
     ],
     targets: [
-        .target(name: "HyperTransferCore"),
+        .target(
+            name: "HyperTransferVerbs",
+            path: "Sources/HyperTransferVerbs",
+            publicHeadersPath: "include",
+            linkerSettings: [.linkedLibrary("rdma")]
+        ),
+        .target(
+            name: "HyperTransferCore",
+            dependencies: ["HyperTransferVerbs"]
+        ),
         .executableTarget(
             name: "HyperTransfer",
             dependencies: ["HyperTransferCore"]
+        ),
+        .executableTarget(
+            name: "HyperTransferJoin",
+            dependencies: ["HyperTransferVerbs"]
         ),
         .executableTarget(
             name: "HyperTransferChecks",

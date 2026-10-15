@@ -6,7 +6,6 @@ struct ContentView: View {
     @StateObject private var model = AppModel()
     @State private var showHidden = false
     @State private var replace = false
-    @State private var destination = ""
     @State private var fabricOpen = false
     @State private var glossaryOpen = false
     @State private var hovered: String?
@@ -49,6 +48,7 @@ struct ContentView: View {
                 .accessibilityHint(Tips.hidden)
             Spacer(minLength: 12)
             fabricButton
+            bridgeStatus
             diskStatus
             Button("Refresh") { Task { await model.refresh() } }
                 .buttonStyle(ToolbarButtonStyle())
@@ -63,14 +63,24 @@ struct ContentView: View {
 
     private var panes: some View {
         HStack(spacing: 0) {
-            browser("This Mac", tip: Tips.localUp)
+            browser("This Mac", tip: Tips.localUp, listing: model.listing, local: true) {
+                await model.goUp()
+            }
             Rectangle().fill(Palette.line).frame(width: 1)
-            browser("Peer", tip: Tips.peerUp)
+            browser("Peer", tip: Tips.peerUp, listing: model.peerListing, local: false) {
+                await model.goPeerUp()
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func browser(_ title: String, tip: String) -> some View {
+    private func browser(
+        _ title: String,
+        tip: String,
+        listing: DirectoryListing?,
+        local: Bool,
+        up: @escaping () async -> Void
+    ) -> some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
                 VStack(alignment: .leading, spacing: 1) {
@@ -82,7 +92,7 @@ struct ContentView: View {
                         .lineLimit(1)
                 }
                 Spacer(minLength: 8)
-                Button("Up") { Task { await model.goUp() } }
+                Button("Up") { Task { await up() } }
                     .buttonStyle(ToolbarButtonStyle())
                     .help(tip)
                     .accessibilityHint(tip)
@@ -92,7 +102,7 @@ struct ContentView: View {
             .padding(.vertical, 6)
             .background(Palette.panel)
             hairline
-            if title == "This Mac", let listing = model.listing {
+            if let listing {
                 let rows = listing.entries.filter { showHidden || !$0.hidden }
                 columnHeader
                 hairline
@@ -102,7 +112,7 @@ struct ContentView: View {
                     ScrollView {
                         LazyVStack(spacing: 0) {
                             ForEach(rows) { entry in
-                                fileRow(entry)
+                                fileRow(entry, local: local)
                             }
                         }
                     }
@@ -122,11 +132,17 @@ struct ContentView: View {
             .background(Palette.panel)
     }
 
-    private func fileRow(_ entry: DirectoryEntry) -> some View {
-        let selected = model.selected?.relative == entry.relative
-        let hot = hovered == entry.relative
+    private func fileRow(_ entry: DirectoryEntry, local: Bool) -> some View {
+        let selected = local
+            ? model.selected?.relative == entry.relative
+            : model.peerSelected == entry.relative
+        let hot = hovered == (local ? "local:" : "peer:") + entry.relative
         return Button {
-            model.selected = entry
+            if local {
+                model.selected = entry
+            } else {
+                model.peerSelected = entry.relative
+            }
         } label: {
             fileLine(
                 symbol: symbolName(entry.kind),
@@ -148,11 +164,17 @@ struct ContentView: View {
         .accessibilityLabel(entry.name)
         .accessibilityValue(selected ? "Selected" : entry.kind)
         .onHover { hovering in
-            hovered = hovering ? entry.relative : (hovered == entry.relative ? nil : hovered)
+            let key = (local ? "local:" : "peer:") + entry.relative
+            hovered = hovering ? key : (hovered == key ? nil : hovered)
         }
         .simultaneousGesture(TapGesture(count: 2).onEnded {
-            model.selected = entry
-            Task { await model.openSelected() }
+            if local {
+                model.selected = entry
+                Task { await model.openSelected() }
+            } else {
+                model.peerSelected = entry.relative
+                Task { await model.openPeer(entry) }
+            }
         })
     }
 
@@ -207,29 +229,27 @@ struct ContentView: View {
 
     private var copyBar: some View {
         HStack(spacing: 10) {
-            Text("Peer path")
+            Text("Lands in")
                 .font(.system(size: 12))
                 .foregroundStyle(Palette.muted)
-            TextField("Same path on the peer", text: $destination)
-                .textFieldStyle(.plain)
+            Text(landsLabel)
                 .font(.system(size: 13, design: .monospaced))
-                .padding(.horizontal, 8)
-                .frame(minHeight: 26)
-                .background(Palette.inset, in: RoundedRectangle(cornerRadius: 6))
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Palette.line))
-                .help(Tips.destination)
-                .accessibilityHint(Tips.destination)
-                .accessibilityLabel("Peer path")
+                .foregroundStyle(Palette.text)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .help(Tips.landsIn)
+                .accessibilityHint(Tips.landsIn)
+                .accessibilityLabel("Lands in \(landsLabel)")
             Toggle("Replace after a match", isOn: $replace)
                 .toggleStyle(.checkbox)
                 .font(.system(size: 12))
                 .help(Tips.replace)
                 .accessibilityHint(Tips.replace)
-            Button("Copy file") { model.attemptCopy() }
+            Button("Copy file") { model.attemptCopy(folder: false, replace: replace) }
                 .buttonStyle(ToolbarButtonStyle(prominent: true))
                 .help(Tips.copyFile)
                 .accessibilityHint(Tips.copyFile)
-            Button("Copy folder") { model.attemptCopy() }
+            Button("Copy folder") { model.attemptCopy(folder: true, replace: replace) }
                 .buttonStyle(ToolbarButtonStyle(prominent: true))
                 .help(Tips.copyFolder)
                 .accessibilityHint(Tips.copyFolder)
@@ -243,10 +263,10 @@ struct ContentView: View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 if statusText != model.receiptLine {
-                    Text(statusText)
-                        .font(.system(size: 12))
-                        .foregroundStyle(Palette.muted)
-                        .lineLimit(2)
+                Text(statusText)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Palette.muted)
+                    .lineLimit(4)
                         .accessibilityAddTraits(.updatesFrequently)
                 }
                 Text(model.receiptLine)
@@ -323,7 +343,7 @@ struct ContentView: View {
                 }
                 DisclosureGroup(isExpanded: $glossaryOpen) {
                     VStack(alignment: .leading, spacing: 8) {
-                        glossary("Thunderbolt.", "A cable can be up and still only speak Internet Protocol. That service is a fast kernel path. It is not RDMA, so this window leaves it unused. An unrecognized protocol on the same cable is left unused too.")
+                        glossary("Thunderbolt.", "A cable can be up and still only speak Internet Protocol. That service is a fast kernel path. It is not RDMA, so this window leaves it unused. An unrecognized protocol on the same cable is left unused too. A verbs port in state 4 is the port that opens the file panes.")
                         glossary("RoCE.", "RDMA over Ethernet. The port has to be ACTIVE. On a lossy network the link can still deliver the bytes by retrying, and that cost shows up as time, not as a failed hash.")
                         glossary("InfiniBand.", "Native RDMA. A port that is not ACTIVE often means the cable or the subnet manager is missing. Down stays down until that port says ACTIVE.")
                         glossary("iWARP.", "RDMA mapped onto TCP. The connection rides TCP. Once the queue pair is up, the file writes are still RDMA. EFA is RDMA as well, and it is not labeled RoCE.")
@@ -353,6 +373,9 @@ struct ContentView: View {
 
     private var statusText: String {
         if !model.announcement.isEmpty { return model.announcement }
+        if model.peerListing == nil {
+            return phaseOnScreen(phase: model.peerPhase, diagnosis: model.bridge)
+        }
         guard let listing = model.listing else { return "Closed" }
         let shown = listing.entries.filter { showHidden || !$0.hidden }.count
         return shown == 1 ? "1 item" : "\(shown) items"
@@ -365,17 +388,49 @@ struct ContentView: View {
         return Tips.disk
     }
 
+    private var landsLabel: String {
+        guard let listing = model.peerListing else {
+            return "The peer folder is not on screen."
+        }
+        let folder = listing.path == "." ? "Home" : listing.path
+        let tail = listing.truncated ? " · list stopped early" : ""
+        guard let selected = model.selected else { return folder + tail }
+        let name = (selected.relative as NSString).lastPathComponent
+        return "\(folder)/\(name)" + tail
+    }
+
+    private var bridgeTip: String {
+        let sentence = model.bridge?.sentence ?? "The bridge probe has not answered."
+        return "\(sentence) \(Tips.bridge)"
+    }
+
+    private var bridgeStatus: some View {
+        HStack(spacing: 6) {
+            wordCapsule(model.bridge?.word ?? "Place", tone: model.bridge?.tone ?? .place)
+            Text("Bridge")
+                .font(.system(size: 12))
+                .foregroundStyle(Palette.text)
+        }
+        .help(bridgeTip)
+        .accessibilityHint(bridgeTip)
+        .accessibilityLabel("Thunderbolt bridge \(model.bridge?.word ?? "Place")")
+    }
+
     private func pathLine(_ title: String) -> String {
         if title == "Peer" {
-            return CopyGate.canBrowse(model.fabric) ? "No queue pair" : "Closed"
+            guard let listing = model.peerListing else {
+                return model.bridge?.word ?? "Closed"
+            }
+            let path = listing.path == "." ? "Home" : listing.path
+            return listing.truncated ? path + " · list stopped early" : path
         }
         if model.listing == nil { return "Closed" }
         return model.listingDetail
     }
 
     private func emptyMessage(_ title: String) -> String {
-        if title == "Peer", CopyGate.canBrowse(model.fabric) {
-            return CopyGate.refusal(fabric: model.fabric)
+        if title == "Peer" {
+            return phaseOnScreen(phase: model.peerPhase, diagnosis: model.bridge)
         }
         if title == "This Mac", model.listing == nil {
             return model.fabric?.summary ?? "Reading the fabric."

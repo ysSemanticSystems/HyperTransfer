@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 public struct PortReport: Equatable, Sendable {
@@ -197,14 +198,17 @@ public func parseThunderbolt(_ data: Data) -> [PortReport] {
 
 public func verbsPort(library: String?) -> PortReport {
     if let library {
+        let apple = library == "librdma"
         return PortReport(
-            name: "libibverbs",
+            name: apple ? "librdma" : "libibverbs",
             transport: "verbs",
             state: "present",
             rdma: false,
             word: "Place",
             tone: .place,
-            detail: "The verbs library is at \(library). A port still has to be ACTIVE before a copy starts."
+            detail: apple
+                ? "The verbs library is librdma. A port still has to be ACTIVE before a copy starts."
+                : "The verbs library is at \(library). A port still has to be ACTIVE before a copy starts."
         )
     }
     return PortReport(
@@ -225,7 +229,117 @@ public func findVerbsLibrary() -> String? {
         "/opt/homebrew/lib/libibverbs.dylib",
         "/usr/local/lib/libibverbs.dylib",
     ]
-    return candidates.first { FileManager.default.fileExists(atPath: $0) }
+    if let found = candidates.first(where: { FileManager.default.fileExists(atPath: $0) }) {
+        return found
+    }
+    if FileManager.default.isExecutableFile(atPath: "/usr/bin/ibv_devinfo") {
+        return "librdma"
+    }
+    return nil
+}
+
+public func verbsStateCode(_ state: String) -> Int? {
+    let trimmed = state.trimmingCharacters(in: .whitespacesAndNewlines)
+    if let open = trimmed.lastIndex(of: "("), let close = trimmed.lastIndex(of: ")"), open < close {
+        let inner = trimmed[trimmed.index(after: open)..<close].trimmingCharacters(in: .whitespaces)
+        if !inner.isEmpty, inner.allSatisfy(\.isNumber), let code = Int(inner) {
+            return code
+        }
+    }
+    if let colon = trimmed.firstIndex(of: ":") {
+        let head = trimmed[..<colon].trimmingCharacters(in: .whitespaces)
+        return Int(head)
+    }
+    return Int(trimmed)
+}
+
+public func parseIbvDevinfo(_ text: String) -> [PortReport] {
+    var ports: [PortReport] = []
+    var device = ""
+    var transport = ""
+    var portNumber = ""
+    var state = ""
+    var layer = ""
+    var havePort = false
+    func flush() {
+        guard havePort, !device.isEmpty, !portNumber.isEmpty else { return }
+        ports.append(appleVerbsPort(
+            device: device,
+            port: portNumber,
+            transportLine: transport,
+            stateLine: state,
+            linkLayer: layer
+        ))
+        havePort = false
+        portNumber = ""
+        state = ""
+        layer = ""
+    }
+    for raw in text.split(separator: "\n", omittingEmptySubsequences: false) {
+        let line = String(raw).trimmingCharacters(in: .whitespaces)
+        if line.hasPrefix("hca_id:") {
+            flush()
+            device = fieldValue(line)
+            transport = ""
+        } else if line.hasPrefix("transport:") {
+            transport = fieldValue(line)
+        } else if line.hasPrefix("port:") {
+            flush()
+            portNumber = fieldValue(line)
+            havePort = true
+        } else if line.hasPrefix("state:") {
+            state = fieldValue(line)
+        } else if line.hasPrefix("link_layer:") {
+            layer = fieldValue(line)
+        }
+    }
+    flush()
+    return ports
+}
+
+public func appleVerbsPort(
+    device: String,
+    port: String,
+    transportLine: String,
+    stateLine: String,
+    linkLayer: String
+) -> PortReport {
+    let blob = (transportLine + " " + linkLayer).lowercased()
+    let transport: String
+    if blob.contains("thunderbolt") {
+        transport = "thunderbolt"
+    } else if blob.contains("infiniband") {
+        transport = "infiniband"
+    } else if blob.contains("ethernet") {
+        transport = "ethernet-rdma"
+    } else {
+        transport = "unknown"
+    }
+    let active = verbsStateCode(stateLine) == 4
+    let rdma = active && transport != "unknown"
+    return PortReport(
+        name: "\(device)/\(port)",
+        transport: transport,
+        state: active ? "active" : "down",
+        rdma: rdma,
+        word: rdma ? "Up" : "Down",
+        tone: rdma ? .up : .down,
+        detail: verbsDetail(
+            name: "\(device)/\(port)",
+            transport: transport,
+            driver: "librdma",
+            state: stateLine,
+            active: active
+        )
+    )
+}
+
+public func activeVerbsDevice(_ report: FabricReport) -> String? {
+    guard let name = report.ports.first(where: { $0.rdma && $0.state == "active" })?.name else {
+        return nil
+    }
+    guard let slash = name.firstIndex(of: "/") else { return name }
+    return String(name[..<slash])
 }
 
 public func buildReport(ports: [PortReport], verbsLibrary: String?, disk: DiskSpace) -> FabricReport {
@@ -271,6 +385,7 @@ public func probeMachine(sysfs: URL? = nil, home: URL? = nil) -> FabricReport {
     if FileManager.default.fileExists(atPath: root.path) {
         ports.append(contentsOf: readLinuxSysfs(at: root))
     }
+    ports.append(contentsOf: parseIbvDevinfo(readIbvDevinfo()))
     let library = findVerbsLibrary()
     ports.append(verbsPort(library: library))
     let disk = diskSpace(at: home ?? FileManager.default.homeDirectoryForCurrentUser)
@@ -385,6 +500,33 @@ private func servicePort(busName: String, service: [String: Any]) -> PortReport 
         tone: .unreachable,
         detail: "Protocol \(protocolID) (\(serviceName)) is not InfiniBand, RoCE, or iWARP. It is left unused."
     )
+}
+
+private func fieldValue(_ line: String) -> String {
+    guard let colon = line.firstIndex(of: ":") else { return "" }
+    return line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+}
+
+private func readIbvDevinfo() -> String {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/ibv_devinfo")
+    let pipe = Pipe()
+    process.standardOutput = pipe
+    process.standardError = Pipe()
+    let done = DispatchSemaphore(value: 0)
+    process.terminationHandler = { _ in done.signal() }
+    do {
+        try process.run()
+    } catch {
+        return ""
+    }
+    if done.wait(timeout: .now() + 5) == .timedOut {
+        kill(process.processIdentifier, SIGKILL)
+        return ""
+    }
+    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+    if process.terminationStatus != 0 || data.isEmpty { return "" }
+    return String(decoding: data, as: UTF8.self)
 }
 
 private func probeThunderbolt() -> [PortReport] {

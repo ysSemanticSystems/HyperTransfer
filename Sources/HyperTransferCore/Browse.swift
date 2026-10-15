@@ -18,6 +18,7 @@ public struct DirectoryListing: Equatable, Sendable {
     public var path: String
     public var parent: String?
     public var entries: [DirectoryEntry]
+    public var truncated: Bool = false
 }
 
 public struct FilePreview: Equatable, Sendable {

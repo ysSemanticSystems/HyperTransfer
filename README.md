@@ -28,9 +28,14 @@ A copy starts only when a port is RDMA and active.
 
 | Link | What HyperTransfer does |
 | --- | --- |
-| RoCE, InfiniBand, iWARP, or EFA, port active | The file can be copied. |
+| RoCE, InfiniBand, iWARP, or EFA, port active | The file can be copied once a queue pair exists. |
+| Thunderbolt verbs port `PORT_ACTIVE (4)` | The file can be copied once the other Mac is running HyperTransfer and the queue pair is up. |
 | Thunderbolt carrying ordinary IP | The cable can be up. The file is not copied. |
 | Unrecognized Thunderbolt protocol | Left unused. |
+
+## Both computers
+
+The other Mac needs RDMA enabled, and it needs this app running. The Thunderbolt port accepts a send only when the far side has posted a receive of the same size. HyperTransfer is the program that posts that receive, checks the completion record, and renames the file. A Mac with RDMA on, and this app closed, has nowhere for the file to land.
 
 ## Further reading
 

@@ -163,6 +163,18 @@ final class SourceContractTests {
         XCTAssertEqual(help, hint)
     }
 
+    func testQueuePairRecordStays64Bytes() throws {
+        let file = repoRoot().appendingPathComponent("Sources/HyperTransferVerbs/VerbsBridge.c")
+        let text = try String(contentsOf: file, encoding: .utf8)
+        XCTAssertTrue(text.contains("#define HT_SETUP_LEN 64"))
+        XCTAssertTrue(text.contains("HTQ1"))
+        XCTAssertTrue(text.contains("24764"))
+        XCTAssertFalse(text.contains("fopen"))
+        XCTAssertFalse(text.contains("O_RDONLY"))
+        XCTAssertFalse(text.contains("O_WRONLY"))
+        XCTAssertTrue(text.contains("n != HT_SETUP_LEN"))
+    }
+
     func testInvariantsCatalogLocksExist() throws {
         let text = try String(contentsOf: repoRoot().appendingPathComponent("docs/invariants.md"), encoding: .utf8)
         let tests = try definedTests()
