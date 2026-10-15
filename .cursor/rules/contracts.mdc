@@ -1,0 +1,15 @@
+---
+description: Read the shelf inventory if this app ever starts listening
+globs: ys.service.toml,Sources/HyperTransfer/HyperTransferApp.swift
+alwaysApply: false
+---
+
+# Portfolio contracts
+
+When these files are in play, read `../.contracts/` (`/Users/ye/Documents/GitHub/.contracts/`). Start with its README, then `inventory/ports-and-processes.md`.
+
+Honor stamps: Observed / Interface / Decision / Intent.
+
+HyperTransfer is a native Mac window. It does not listen. A future port gets a row in that inventory in the same change, and a `health` URL only when the path is real. `check` is `pgrep -x HyperTransfer`. A child stop signals only the pid this card spawned.
+
+This rule is glob-gated. It does not apply to a tooltip or a hash change.

@@ -1,0 +1,20 @@
+---
+description: How to work in HyperTransfer
+alwaysApply: true
+---
+
+# HyperTransfer
+
+HyperTransfer copies a file only while a RDMA port is ACTIVE, then compares three measurements of the data fork: the source before the copy, the received file, and the source again. Each measurement is two reads that must return the same bytes, digested with SHA-512 and BLAKE2b.
+
+A one-sided WRITE is not finished when the sender's completion arrives. Publish a 64-byte completion record after a flush read of the tail. The receiver writes the partial file only after that record is visible and the CPU-visible bytes match it. Rename the partial onto the finished name only when the three digests agree.
+
+Thunderbolt Internet Protocol is a link. It is not a reason to open the file panes or to send the file. This app does not listen on a port. File bytes stay off sockets.
+
+```bash
+swift run --disable-sandbox HyperTransferChecks
+```
+
+This runs on the M4 Pro Mac mini with 24 GB unified memory. It does not load a model. Do not invent a port.
+
+Design: `docs/ARCHITECTURE.md`. Regressions: `docs/invariants.md`.

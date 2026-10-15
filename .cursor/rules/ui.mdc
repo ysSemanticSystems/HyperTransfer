@@ -1,0 +1,17 @@
+---
+description: Tooltips, status words, and file names in the HyperTransfer window
+globs: Sources/HyperTransfer/**/*.swift
+alwaysApply: false
+---
+
+# Window
+
+Every control takes a tooltip that says what it does, what it is reading, and the failure that reading can hide. The sentence lives in `Sources/HyperTransferCore/Tips.swift`. Attach it with `.help` and `.accessibilityHint`. A label that repeats the visible word is not a tooltip.
+
+Color carries status and the word stays. Up is green. Reachable is teal. Down is red. Unreachable is orange. Place is neutral. Disk pressure uses Tight (orange, under 15 percent free) and Full (red, under 5 percent).
+
+File and folder names are `Text` values. Do not build a row from an HTML string.
+
+The preview is the first 4096 bytes. It is not the transfer digest. The receipt is SHA-512 and BLAKE2b for the three passes, the copy time, and the word Match or Data fork or Down.
+
+A closed control stays hoverable so the tooltip still shows. The copy action asks `CopyGate` and shows the refusal.

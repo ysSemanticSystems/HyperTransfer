@@ -1,0 +1,18 @@
+---
+description: Self-evolving must-not-regress catalog for HyperTransfer
+alwaysApply: true
+---
+
+# Invariants
+
+Non-obvious failures live in [`docs/invariants.md`](docs/invariants.md). One catalog. Append entries. Do not add a second gotcha file.
+
+When a fix must not regress:
+
+1. Follow skill `capture-invariant` in the same change.
+2. Lock it with a unit test.
+3. The change is incomplete if the next session would have to be re-taught the failure.
+
+Before editing a path named on an active entry, read that entry.
+
+Do not add an always-on rule for a single bug. Extend the catalog.

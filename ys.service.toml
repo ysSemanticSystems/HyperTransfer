@@ -1,0 +1,11 @@
+id = "hypertransfer"
+title = "HyperTransfer"
+group = "Studios"
+summary = "Copy a file only while RDMA is active, then hash it three times."
+cwd = "/Users/ye/Documents/GitHub/HyperTransfer"
+start = ["/bin/sh", "scripts/run.sh"]
+stop = []
+exclusive = []
+data = "none"
+mode = "child"
+check = ["pgrep", "-x", "HyperTransfer"]
